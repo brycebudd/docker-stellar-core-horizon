@@ -1,0 +1,10 @@
+#! /bin/bash
+
+while ! psql -U stellar -c 'select 1' bridge &> /dev/null ; do
+  echo "Waiting for postgres to be available..."
+  sleep 1
+done
+
+echo "starting bridge server..."
+set -e
+exec /usr/local/bin/bridge -c "/opt/stellar/bridge/etc/bridge.cfg"

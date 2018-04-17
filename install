@@ -13,4 +13,20 @@ mv /horizon-v${HORIZON_VERSION}-linux-amd64/horizon /usr/local/bin
 chmod +x /usr/local/bin/horizon
 rm -rf horizon.tar.gz /horizon-v${HORIZON_VERSION}-linux-amd64
 
-echo "\nDone installing stellar-core and horizon...\n"
+# bridge server
+wget -O bridge.tar.gz https://github.com/stellar/bridge-server/releases/download/v${BRIDGE_VERSION}/bridge-v${BRIDGE_VERSION}-linux-amd64.tar.gz
+tar -zxvf bridge.tar.gz
+mv /bridge-v${BRIDGE_VERSION}-linux-amd64/bridge /usr/local/bin
+chmod +x /usr/local/bin/bridge
+rm -rf bridge.tar.gz /bridge-v${BRIDGE_VERSION}-linux-amd64
+
+# compliance server
+wget -O compliance.tar.gz https://github.com/stellar/bridge-server/releases/download/v${COMPLIANCE_VERSION}/compliance-v${COMPLIANCE_VERSION}-linux-amd64.tar.gz
+tar -zxvf compliance.tar.gz
+mv /compliance-v${COMPLIANCE_VERSION}-linux-amd64/compliance /usr/local/bin
+chmod +x /usr/local/bin/compliance
+rm -rf compliance.tar.gz /compliance-v${COMPLIANCE_VERSION}-linux-amd64
+
+echo "\nDone installing stellar-core, horizon, bridge and compliance server...\n"
+
+

@@ -1,0 +1,6 @@
+#! /bin/bash
+
+# This file is a simple wrapper around compliance server that establishes the proper
+# environment variables before executing the actual binary.
+
+exec /usr/local/bin/bridge $@

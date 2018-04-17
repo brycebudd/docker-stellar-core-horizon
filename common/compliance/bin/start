@@ -1,0 +1,10 @@
+#! /bin/bash
+
+while ! psql -U stellar -c 'select 1' compliance &> /dev/null ; do
+  echo "Waiting for postgres to be available..."
+  sleep 1
+done
+
+echo "starting compliance server..."
+set -e
+exec /usr/local/bin/compliance -c "/opt/stellar/compliance/etc/compliance.cfg"

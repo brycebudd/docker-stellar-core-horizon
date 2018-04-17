@@ -6,6 +6,8 @@ export PGHOME="$STELLAR_HOME/postgresql"
 export SUPHOME="$STELLAR_HOME/supervisor"
 export COREHOME="$STELLAR_HOME/core"
 export HZHOME="$STELLAR_HOME/horizon"
+export BRIDGEHOME="$STELLAR_HOME/bridge"
+export COMPLIANCEHOME="$STELLAR_HOME/compliance"
 
 export PGBIN="/usr/lib/postgresql/9.4/bin"
 export PGDATA="$PGHOME/data"
@@ -29,6 +31,8 @@ function main() {
 	init_db
 	init_stellar_core
 	init_horizon
+	init_bridge
+	init_compliance
 	copy_pgpass
 
 	stop_postgres  # this gets started in init_db
@@ -154,6 +158,18 @@ function copy_defaults() {
 	else
 		$CP /opt/stellar-default/common/horizon/ $HZHOME
 	fi
+
+	if [ -d $BRIDGEHOME/etc ]; then
+		echo "bridge: config directory exists, skipping copy"
+	else
+		$CP /opt/stellar-default/common/bridge/ $BRIDGEHOME
+	fi
+
+	if [ -d $COMPLIANCEHOME/etc ]; then
+		echo "compliance: config directory exists, skipping copy"
+	else
+		$CP /opt/stellar-default/common/compliance/ $COMPLIANCEHOME
+	fi		
 }
 
 function copy_pgpass() {
@@ -191,10 +207,14 @@ function init_db() {
 	run_silent "init-postgres" sudo -u postgres $PGBIN/initdb -D $PGDATA
 
 	start_postgres
+	run_silent "create-compliance-db" sudo -u postgres createdb compliance
+	run_silent "create-bridge-db" sudo -u postgres createdb bridge
 	run_silent "create-horizon-db" sudo -u postgres createdb horizon
 	run_silent "create-core-db" sudo -u postgres createdb core
 	run_silent "stellar-postgres-user" sudo -u postgres psql <<-SQL
 		CREATE USER $PGUSER WITH PASSWORD '$PGPASS';
+		GRANT ALL PRIVILEGES ON DATABASE compliance to $PGUSER;
+		GRANT ALL PRIVILEGES ON DATABASE bridge to $PGUSER;
 		GRANT ALL PRIVILEGES ON DATABASE horizon to $PGUSER;
 		GRANT ALL PRIVILEGES ON DATABASE core to $PGUSER;
 	SQL
@@ -204,7 +224,7 @@ function init_db() {
 }
 
 function init_stellar_core() {
-	if [ -f $COREHOME/.quickstart-initialized ]; then
+	if [ -f $COREHOME/.core-initialized ]; then
 		echo "core: already initialized"
 		return 0
 	fi
@@ -221,12 +241,12 @@ function init_stellar_core() {
 		run_silent "init-core-scp" sudo -u stellar stellar-core --forcescp --conf etc/stellar-core.cfg
 	fi
 
-	touch .quickstart-initialized
+	touch .core-initialized
 	popd
 }
 
 function init_horizon() {
-	if [ -f $HZHOME/.quickstart-initialized ]; then
+	if [ -f $HZHOME/.horizon-initialized ]; then
 		echo "horizon: already initialized"
 		return 0
 	fi
@@ -242,7 +262,49 @@ function init_horizon() {
 	start_postgres
 	run_silent "init-horizon-db" sudo -u stellar ./bin/horizon db init
 
-	touch .quickstart-initialized
+	touch .horizon-initialized
+	popd
+}
+
+function init_compliance() {
+	if [ -f $COMPLIANCEHOME/.compliance-initialized ]; then
+		echo "compliance: already initialized"
+		return 0
+	fi
+	pushd $COMPLIANCEHOME
+
+	run_silent "chown-compliance" chown stellar:stellar .
+	
+	sed -ri \
+		-e "s/__PGPASS__/$PGPASS/g" \
+		-e "s/__NETWORK__/$NETWORK_PASSPHRASE/g" \
+		etc/compliance.cfg
+
+	start_postgres
+	run_silent "init-compliance-db" sudo -u stellar ./bin/compliance -c etc/compliance.cfg --migrate-db
+
+	touch .compliance-initialized
+	popd
+}
+
+function init_bridge() {
+	if [ -f $BRIDGEHOME/.bridge-initialized ]; then
+		echo "bridge: already initialized"
+		return 0
+	fi
+	pushd $BRIDGEHOME
+
+	run_silent "chown-bridge" chown stellar:stellar .
+	
+	sed -ri \
+		-e "s/__PGPASS__/$PGPASS/g" \
+		-e "s/__NETWORK__/$NETWORK_PASSPHRASE/g" \
+		etc/bridge.cfg
+
+	start_postgres
+	run_silent "init-bridge-db" sudo -u stellar ./bin/bridge -c etc/bridge.cfg --migrate-db
+
+	touch .bridge-initialized
 	popd
 }
 
