@@ -27,6 +27,11 @@ mv /compliance-v${COMPLIANCE_VERSION}-linux-amd64/compliance /usr/local/bin
 chmod +x /usr/local/bin/compliance
 rm -rf compliance.tar.gz /compliance-v${COMPLIANCE_VERSION}-linux-amd64
 
-echo "\nDone installing stellar-core, horizon, bridge and compliance server...\n"
+# install node version manager
+mkdir -p $NVM_DIR
+wget -qO- https://raw.githubusercontent.com/creationix/nvm/v${NVM_VERSION}/install.sh | bash
+
+
+echo "\nDone installing stellar...\n"
 
 

@@ -8,6 +8,7 @@ export COREHOME="$STELLAR_HOME/core"
 export HZHOME="$STELLAR_HOME/horizon"
 export BRIDGEHOME="$STELLAR_HOME/bridge"
 export COMPLIANCEHOME="$STELLAR_HOME/compliance"
+export SCRIPTSHOME="$STELLAR_HOME/scripts"
 
 export PGBIN="/usr/lib/postgresql/9.4/bin"
 export PGDATA="$PGHOME/data"
@@ -19,7 +20,7 @@ CURRENT_POSTGRES_PID=""
 
 function main() {
 	echo ""
-	echo "Starting Stellar Quickstart"
+	echo "Starting Research Stellar"
 	echo ""
 
 	process_args $*
@@ -28,6 +29,7 @@ function main() {
 	echo "network: $NETWORK ($NETWORK_PASSPHRASE)"
 
 	copy_defaults
+	init_scripts
 	init_db
 	init_stellar_core
 	init_horizon
@@ -169,7 +171,13 @@ function copy_defaults() {
 		echo "compliance: config directory exists, skipping copy"
 	else
 		$CP /opt/stellar-default/common/compliance/ $COMPLIANCEHOME
-	fi		
+	fi
+
+	if [ -d $SCRIPTSHOME ]; then
+		echo "scripts: directory exists, skipping copy"
+	else
+		$CP /opt/stellar-default/common/scripts/ $SCRIPTSHOME
+	fi			
 }
 
 function copy_pgpass() {
@@ -181,6 +189,19 @@ function copy_pgpass() {
 	$CP /opt/stellar/postgresql/.pgpass /home/stellar
 	chmod 0600 /home/stellar/.pgpass
 	chown stellar:stellar /home/stellar/.pgpass
+}
+
+function init_scripts() {
+	if [ -f $SCRIPTSHOME/.scripts-initialized ]; then
+		echo "scripts: already initialized"
+		return 0
+	fi
+	pushd $SCRIPTSHOME
+
+	npm install --save stellar-sdk
+
+	touch .scripts-initialized
+	popd
 }
 
 function init_db() {
@@ -295,11 +316,15 @@ function init_bridge() {
 	pushd $BRIDGEHOME
 
 	run_silent "chown-bridge" chown stellar:stellar .
+	run_silent "generate-issuing-account" node ../scripts/createIssuingAccount.js
+
+	#ISSUING_ACCOUNT = $(jq '.publicKey' issuingAccount.json)
 	
 	sed -ri \
 		-e "s/__PGPASS__/$PGPASS/g" \
 		-e "s/__NETWORK__/$NETWORK_PASSPHRASE/g" \
 		etc/bridge.cfg
+	#	-e "s/__ISSUINGACCOUNT__/$ISSUING_ACCOUNT/g" \
 
 	start_postgres
 	run_silent "init-bridge-db" sudo -u stellar ./bin/bridge -c etc/bridge.cfg --migrate-db
