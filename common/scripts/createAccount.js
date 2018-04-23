@@ -1,11 +1,10 @@
 var StellarSdk = require('stellar-sdk');
-const fs = require('fs');
 
 var HORIZON_ENDPOINT = "http://localhost:8000/";//process.env.HORIZON_ENDPOINT;
 var NETWORK_PASSPHRASE = "Standalone Network ; February 2017";//process.env.NETWORK_PASSPHRASE;
 var rootAccount = "SC5O7VZUXDJ6JBDSZ74DSERXL7W3Y5LTOAMRF7RQRL3TAGAPS7LUVG3L";
 var amount = process.argv[2] || "20";
-var memo = "issuing account creation";
+var memo = "initial account creation";
 
 StellarSdk.Network.use(new StellarSdk.Network(NETWORK_PASSPHRASE));
 var opts = new StellarSdk.Config.setAllowHttp(true);
@@ -25,11 +24,9 @@ server.loadAccount(sourceKeys.publicKey())
 	transaction.sign(sourceKeys);
 	return server.submitTransaction(transaction)
 	    .then(function(result) {
-            //console.log('\nSuccess! View the transaction at: ');
 		    console.log(JSON.stringify(result, null, 2));
-		    //console.log(result._links.transaction.href);
-		    var issuingAccount = {"publicKey": destinationKeys.publicKey(), "secretKey": destinationKeys.secret()};
-		    fs.writeFileSync('issuingAccount.json', JSON.stringify(issuingAccount));
+		    var newAccount = {"publicKey": destinationKeys.publicKey(), "secretKey": destinationKeys.secret()};
+		    console.log(JSON.stringify(newAccount, null, 2));
 		
 	    })
 	    .catch(function(error) {
