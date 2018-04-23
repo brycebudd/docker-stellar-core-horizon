@@ -1,7 +1,7 @@
 __PHONY__: build build-testing
 
 build:
-	docker build -t bbudd/stellar -f Dockerfile .
+	docker build -t bbudd/research -f Dockerfile .
 
 build-testing:
-	docker build -t bbudd/stellar:testing -f Dockerfile.testing .
+	docker build -t bbudd/research:testing -f Dockerfile.testing .
