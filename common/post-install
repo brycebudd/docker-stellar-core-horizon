@@ -1,0 +1,12 @@
+#! /usr/bin/env bash
+
+read -p "Restarting Horizon...Press any key to continue. " -n1 -s
+
+supervisorctl restart horizon
+
+read -p "Starting Compliance Server...Press any key to continue. " -n1 -s
+supervisorctl start compliance
+
+read -p "Starting Bridge Server...Press any key to continue. " -n1 -s
+
+supervisorctl start bridge

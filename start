@@ -78,7 +78,8 @@ function process_args() {
     export NETWORK_PASSPHRASE="Public Global Stellar Network ; September 2015"
     ;;
 	standalone)
-    NETWORK_PASSPHRASE="Standalone Network ; February 2017"
+    export NETWORK_PASSPHRASE="Standalone Network ; February 2017"
+	export ROOT_SEED="SC5O7VZUXDJ6JBDSZ74DSERXL7W3Y5LTOAMRF7RQRL3TAGAPS7LUVG3L"
     ;;
 	*)
 		echo "Unknown network: '$NETWORK'" >&2
@@ -316,21 +317,47 @@ function init_bridge() {
 	pushd $BRIDGEHOME
 
 	run_silent "chown-bridge" chown stellar:stellar .
-	run_silent "generate-issuing-account" node ../scripts/createIssuingAccount.js
-
-	#ISSUING_ACCOUNT = $(jq '.publicKey' issuingAccount.json)
+	
+	#run_configure_bridge
 	
 	sed -ri \
 		-e "s/__PGPASS__/$PGPASS/g" \
 		-e "s/__NETWORK__/$NETWORK_PASSPHRASE/g" \
+		-e "s/__ROOT_SEED__/$ROOT_SEED/g" \
 		etc/bridge.cfg
-	#	-e "s/__ISSUINGACCOUNT__/$ISSUING_ACCOUNT/g" \
-
+	
 	start_postgres
 	run_silent "init-bridge-db" sudo -u stellar ./bin/bridge -c etc/bridge.cfg --migrate-db
 
 	touch .bridge-initialized
 	popd
+}
+
+function run_configure_bridge() {
+
+	start_postgres
+	start_stellar
+	start_horizon
+
+	sleep 120
+
+	#run_silent "generate-issuing-account" node ../scripts/createIssuingAccount.js
+	node $SCRIPTSHOME/createIssuingAccount.js
+	export ISSUING_ACCOUNT_FILE=$PWD/issuingAccount.json
+	export ISSUING_ACCOUNT_KEY=$(jq '.publicKey' $ISSUING_ACCOUNT_FILE)	
+
+	sed -ri \
+		-e "s/__PGPASS__/$PGPASS/g" \
+		-e "s/__NETWORK__/$NETWORK_PASSPHRASE/g" \
+		-e "s/__ROOT_SEED__/$ROOT_SEED/g" \
+		-e "s/__ISSUER__/$ISSUING_ACCOUNT_KEY/g" \
+		$BRIDGEHOME/etc/bridge.cfg
+	
+	#run_silent "remove-issuing-account-file" rm -f $ISSUING_ACCOUNT_FILE
+
+	stop_horizon
+	stop_stellar
+
 }
 
 function exec_supervisor() {
@@ -363,6 +390,68 @@ function run_silent() {
 	fi
 
 	set -e
+}
+
+function start_stellar() {
+	if [ ! -z "$CURRENT_STELLAR_PID" ]; then
+		return 0
+	fi
+
+	if [ "$NETWORK" == "standalone" ]; then
+		run_silent "init-core-scp" sudo -u stellar stellar-core --forcescp --conf $COREHOME/etc/stellar-core.cfg
+	fi
+
+	sudo -u stellar stellar-core --conf $COREHOME/etc/stellar-core.cfg &> /dev/null &
+	CURRENT_STELLAR_PID=$!
+
+	#while ! sudo -u stellar stellar-core -c 'info' &> /dev/null; do
+	#	echo "Waiting for stellar-core to be available..."
+	#	sleep 1
+	#done
+
+	echo "stellar-core: up"
+}
+
+function stop_stellar() {
+	if [ -z "$CURRENT_STELLAR_PID" ]; then
+		return 0
+	fi
+
+	kill $CURRENT_STELLAR_PID
+	# wait for stellar to die
+	while kill -0 "$CURRENT_STELLAR_PID" &> /dev/null; do
+		sleep 0.5
+	done
+	echo "stellar-core: down"
+}
+
+function start_horizon() {
+	if [ ! -z "$CURRENT_HORIZON_PID" ]; then
+		return 0
+	fi
+
+	sudo -u stellar $HZHOME/bin/horizon serve &> /dev/null &
+	CURRENT_HORIZON_PID=$!
+
+	#while ! curl http://localhost:8000 &> /dev/null; do
+	#	echo "Waiting for horizon to be available..."
+	#	sleep 1
+	#done
+
+	echo "horizon: up"
+}
+
+function stop_horizon() {
+	if [ -z "$CURRENT_HORIZON_PID" ]; then
+		return 0
+	fi
+
+	kill $CURRENT_HORIZON_PID
+	# wait for horizon to die
+	while kill -0 "$CURRENT_HORIZON_PID" &> /dev/null; do
+		sleep 0.5
+	done
+	echo "horizon: down"
 }
 
 function start_postgres() {
