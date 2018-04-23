@@ -341,8 +341,8 @@ function run_configure_bridge() {
 
 	sleep 120
 
-	#run_silent "generate-issuing-account" node ../scripts/createIssuingAccount.js
-	node $SCRIPTSHOME/createIssuingAccount.js
+	#run_silent "generate-issuing-account" node ../scripts/createAccount.js
+	node $SCRIPTSHOME/createAccount.js
 	export ISSUING_ACCOUNT_FILE=$PWD/issuingAccount.json
 	export ISSUING_ACCOUNT_KEY=$(jq '.publicKey' $ISSUING_ACCOUNT_FILE)	
 
