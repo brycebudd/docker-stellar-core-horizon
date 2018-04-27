@@ -44,6 +44,10 @@ ADD common /opt/stellar-default/common
 ADD pubnet /opt/stellar-default/pubnet
 ADD testnet /opt/stellar-default/testnet
 ADD standalone /opt/stellar-default/standalone
+ADD bank0 /opt/stellar-default/bank0
+ADD bank1 /opt/stellar-default/bank1
+ADD bank2 /opt/stellar-default/bank2
+
 
 # install node and npm
 RUN source $NVM_DIR/nvm.sh \

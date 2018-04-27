@@ -59,6 +59,15 @@ function process_args() {
 	  --standalone)
 	    NETWORK="standalone"
 	    ;;
+	  --bank0)
+	    NETWORK="bank0"
+		;;
+	  --bank1)
+	    NETWORK="bank1"
+		;;
+	  --bank2)
+	    NETWORK="bank2"
+		;;
 	  *)
 	    echo "Unknown container arg $ARG" >&2
 	    exit 1
@@ -79,8 +88,16 @@ function process_args() {
     ;;
 	standalone)
     export NETWORK_PASSPHRASE="Standalone Network ; February 2017"
-	export ROOT_SEED="SC5O7VZUXDJ6JBDSZ74DSERXL7W3Y5LTOAMRF7RQRL3TAGAPS7LUVG3L"
     ;;
+	bank0)
+	export NETWORK_PASSPHRASE="My Network ; March 2018"
+	;;
+	bank1)
+	export NETWORK_PASSPHRASE="My Network ; March 2018"
+	;;
+	bank2)
+	export NETWORK_PASSPHRASE="My Network ; March 2018"
+	;;
 	*)
 		echo "Unknown network: '$NETWORK'" >&2
 		exit 1
@@ -166,12 +183,18 @@ function copy_defaults() {
 		echo "bridge: config directory exists, skipping copy"
 	else
 		$CP /opt/stellar-default/common/bridge/ $BRIDGEHOME
+		if [ -d /opt/stellar-default/$NETWORK/bridge ]; then
+			$CP /opt/stellar-default/$NETWORK/bridge/ $BRIDGEHOME
+		fi
 	fi
 
 	if [ -d $COMPLIANCEHOME/etc ]; then
 		echo "compliance: config directory exists, skipping copy"
 	else
 		$CP /opt/stellar-default/common/compliance/ $COMPLIANCEHOME
+		if [ -d /opt/stellar-default/$NETWORK/compliance ]; then
+			$CP /opt/stellar-default/$NETWORK/compliance/ $COMPLIANCEHOME
+		fi
 	fi
 
 	if [ -d $SCRIPTSHOME ]; then
@@ -259,7 +282,7 @@ function init_stellar_core() {
 
 	run_silent "init-core-db" sudo -u stellar stellar-core --newdb --conf etc/stellar-core.cfg
 
-	if [ "$NETWORK" == "standalone" ]; then
+	if [ "$NETWORK" == "standalone" ] || [ "$NETWORK" == "bank0" ] || [ "$NETWORK" == "bank1" ] || [ "$NETWORK" == "bank2" ]; then
 		run_silent "init-core-scp" sudo -u stellar stellar-core --forcescp --conf etc/stellar-core.cfg
 	fi
 
@@ -289,6 +312,11 @@ function init_horizon() {
 }
 
 function init_compliance() {
+	if ! [ -d /opt/stellar-default/$NETWORK/compliance ]; then
+		echo "compliance: not required"
+		return 0
+	fi
+
 	if [ -f $COMPLIANCEHOME/.compliance-initialized ]; then
 		echo "compliance: already initialized"
 		return 0
@@ -310,6 +338,11 @@ function init_compliance() {
 }
 
 function init_bridge() {
+	if ! [ -d /opt/stellar-default/$NETWORK/bridge ]; then
+		echo "bridge: not required"
+		return 0
+	fi
+	
 	if [ -f $BRIDGEHOME/.bridge-initialized ]; then
 		echo "bridge: already initialized"
 		return 0
@@ -323,7 +356,6 @@ function init_bridge() {
 	sed -ri \
 		-e "s/__PGPASS__/$PGPASS/g" \
 		-e "s/__NETWORK__/$NETWORK_PASSPHRASE/g" \
-		-e "s/__ROOT_SEED__/$ROOT_SEED/g" \
 		etc/bridge.cfg
 	
 	start_postgres
@@ -349,7 +381,6 @@ function run_configure_bridge() {
 	sed -ri \
 		-e "s/__PGPASS__/$PGPASS/g" \
 		-e "s/__NETWORK__/$NETWORK_PASSPHRASE/g" \
-		-e "s/__ROOT_SEED__/$ROOT_SEED/g" \
 		-e "s/__ISSUER__/$ISSUING_ACCOUNT_KEY/g" \
 		$BRIDGEHOME/etc/bridge.cfg
 	
