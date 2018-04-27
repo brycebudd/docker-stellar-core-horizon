@@ -14,6 +14,11 @@ EXPOSE 5432
 EXPOSE 8000
 EXPOSE 11625
 EXPOSE 11626
+EXPOSE 8007
+EXPOSE 8006
+
+# replace shell with bash so we can source files
+RUN rm /bin/sh && ln -s /bin/bash /bin/sh
 
 ADD dependencies /
 RUN ["chmod", "+x", "dependencies"]
@@ -33,10 +38,16 @@ RUN useradd --uid 10011001 --home-dir /home/stellar --no-log-init stellar \
 RUN ["ln", "-s", "/opt/stellar", "/stellar"]
 RUN ["ln", "-s", "/opt/stellar/core/etc/stellar-core.cfg", "/stellar-core.cfg"]
 RUN ["ln", "-s", "/opt/stellar/horizon/etc/horizon.env", "/horizon.env"]
+RUN ["ln", "-s", "/opt/stellar/bridge/etc/bridge.cfg", "/bridge.cfg"]
+RUN ["ln", "-s", "/opt/stellar/compliance/etc/compliance.cfg", "/compliance.cfg"]
 ADD common /opt/stellar-default/common
 ADD pubnet /opt/stellar-default/pubnet
 ADD testnet /opt/stellar-default/testnet
 ADD standalone /opt/stellar-default/standalone
+ADD bank0 /opt/stellar-default/bank0
+ADD bank1 /opt/stellar-default/bank1
+ADD bank2 /opt/stellar-default/bank2
+
 
 # install node and npm
 RUN source $NVM_DIR/nvm.sh \
@@ -51,4 +62,5 @@ ENV PATH $NVM_DIR/versions/node/v$NODE_VERSION/bin:$PATH
 
 ADD start /
 RUN ["chmod", "+x", "start"]
+
 ENTRYPOINT ["/init", "--", "/start" ]

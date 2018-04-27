@@ -29,7 +29,7 @@ function main() {
 	echo "network: $NETWORK ($NETWORK_PASSPHRASE)"
 
 	copy_defaults
-	init_scripts
+	#init_scripts
 	init_db
 	init_stellar_core
 	init_horizon
@@ -182,8 +182,8 @@ function copy_defaults() {
 	if [ -d $BRIDGEHOME/etc ]; then
 		echo "bridge: config directory exists, skipping copy"
 	else
-		$CP /opt/stellar-default/common/bridge/ $BRIDGEHOME
 		if [ -d /opt/stellar-default/$NETWORK/bridge ]; then
+			$CP /opt/stellar-default/common/bridge/ $BRIDGEHOME
 			$CP /opt/stellar-default/$NETWORK/bridge/ $BRIDGEHOME
 		fi
 	fi
@@ -191,8 +191,8 @@ function copy_defaults() {
 	if [ -d $COMPLIANCEHOME/etc ]; then
 		echo "compliance: config directory exists, skipping copy"
 	else
-		$CP /opt/stellar-default/common/compliance/ $COMPLIANCEHOME
 		if [ -d /opt/stellar-default/$NETWORK/compliance ]; then
+			$CP /opt/stellar-default/common/compliance/ $COMPLIANCEHOME
 			$CP /opt/stellar-default/$NETWORK/compliance/ $COMPLIANCEHOME
 		fi
 	fi
